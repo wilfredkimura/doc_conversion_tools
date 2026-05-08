@@ -23,9 +23,26 @@ document.addEventListener('DOMContentLoaded', () => {
     let selectedFiles = [];
     let selectedFormat = null;
     let currentResults = [];
+    let isCloud = false;
 
     // Initialization
-    loadHistory();
+    async function init() {
+        try {
+            const response = await fetch('/config');
+            const config = await response.json();
+            isCloud = config.is_cloud;
+            
+            if (isCloud) {
+                document.querySelector('.save-locally-section')?.classList.add('hidden');
+                document.querySelector('.subtitle').textContent += ' (Cloud Edition)';
+            }
+        } catch (err) {
+            console.error('Failed to load config', err);
+        }
+        loadHistory();
+    }
+    
+    init();
 
     // File Selection Logic
     const handleFiles = (files) => {
@@ -280,7 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="history-item-meta">${item.format} • ${item.date}</span>
                 </div>
                 <div class="history-item-actions">
-                    ${item.savePath ? `<button class="btn btn-secondary btn-small btn-open" data-path="${item.savePath}">Open Folder</button>` : ''}
+                    ${(item.savePath && !isCloud) ? `<button class="btn btn-secondary btn-small btn-open" data-path="${item.savePath}">Open Folder</button>` : ''}
                     <a href="/download/${item.id}/${item.name}" class="btn btn-secondary btn-small" download>Download</a>
                 </div>
             `;
