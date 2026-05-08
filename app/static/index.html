@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Doc Converter | Premium</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown-dark.css">
+</head>
+<body>
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1 id="main-title">Universal Doc Converter</h1>
+            <p class="subtitle">Premium Multi-Format Document Processing</p>
+        </header>
+
+        <main>
+            <div class="glass-card main-card">
+                <div class="upload-section" id="drop-zone">
+                    <div class="upload-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                        </svg>
+                    </div>
+                    <p>Drag & Drop your file here</p>
+                    <span class="or">or</span>
+                    <label for="file-input" class="btn btn-primary">Browse Files</label>
+                    <input type="file" id="file-input" hidden>
+                    <div id="file-info-display" class="file-info-display hidden">
+                        <div class="file-icon">📄</div>
+                        <p id="selected-filename" class="selected-filename"></p>
+                    </div>
+                </div>
+
+                <div class="options-section">
+                    <h3>Select Output Format</h3>
+                    <div class="format-grid">
+                        <div class="format-option" data-format="pptx-to-md">
+                            <span class="label">PPTX to MD</span>
+                        </div>
+                        <div class="format-option" data-format="pdf-to-md">
+                            <span class="label">PDF to MD</span>
+                        </div>
+                        <div class="format-option" data-format="pdf-to-pptx">
+                            <span class="label">PDF to PPTX</span>
+                        </div>
+                        <div class="format-option" data-format="pptx-to-pdf">
+                            <span class="label">PPTX to PDF</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-section">
+                    <button id="convert-btn" class="btn btn-large btn-glow" disabled>Start Conversion</button>
+                </div>
+            </div>
+
+            <div id="status-card" class="glass-card status-card hidden">
+                <div class="loader-container">
+                    <div class="spinner"></div>
+                    <p id="status-text">Processing your document...</p>
+                </div>
+            </div>
+
+            <div id="result-card" class="glass-card result-card hidden">
+                <div class="result-header">
+                    <h2>Conversion Complete!</h2>
+                    <div class="result-actions">
+                        <button id="new-conv-btn" class="btn btn-secondary">Start New</button>
+                        <button id="copy-btn" class="btn btn-secondary hidden">Copy Markdown</button>
+                        <a id="download-link" class="btn btn-primary" download>Download File</a>
+                    </div>
+                </div>
+
+                <div id="preview-container" class="preview-container hidden">
+                    <h3>Preview</h3>
+                    <div id="markdown-preview" class="markdown-body"></div>
+                </div>
+
+                <div class="save-locally-section">
+                    <hr>
+                    <h3>Save to Local Folder?</h3>
+                    <div class="save-controls">
+                        <input type="text" id="save-path" placeholder="C:/Users/name/Documents/Output" class="input-field">
+                        <button id="save-btn" class="btn btn-accent">Save Permanently</button>
+                    </div>
+                    <p id="save-status" class="save-status"></p>
+                </div>
+            </div>
+
+            <div id="history-section" class="history-section hidden">
+                <hr>
+                <div class="history-header">
+                    <h3>Recent Conversions</h3>
+                    <button id="clear-history-btn" class="btn-text">Clear All</button>
+                </div>
+                <div id="history-list" class="history-list">
+                    <!-- History items will be injected here -->
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 Antigravity Document Tools. Powered by MarkItDown.</p>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
+    <script src="/static/script.js"></script>
+</body>
+</html>

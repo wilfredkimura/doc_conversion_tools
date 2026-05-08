@@ -1,0 +1,8 @@
+markitdown[all]
+pathlib
+argparse
+fastapi
+uvicorn
+python-multipart
+pdf2pptx
+comtypes
