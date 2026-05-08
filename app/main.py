@@ -12,7 +12,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from starlette.requests import Request
 
-from converters import (
+from .converters import (
     PptxToMarkdownConverter,
     PdfToMarkdownConverter,
     PdfToPptxConverter,
