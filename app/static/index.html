@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,15 +8,13 @@
     <link rel="stylesheet" href="/static/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown-dark.css">
 </head>
+
 <body>
-    <div class="background-blobs">
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
-        <div class="blob blob-3"></div>
-    </div>
+    <!-- Subtle surface layers handled in CSS -->
 
     <div class="container">
         <header>
@@ -28,16 +27,15 @@
                 <div class="upload-section" id="drop-zone">
                     <div class="upload-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
                         </svg>
                     </div>
                     <p>Drag & Drop your files here</p>
                     <span class="or">or</span>
-                    <label for="file-input" class="btn btn-primary">Browse Files</label>
-                    <input type="file" id="file-input" multiple hidden>
-                    <div id="file-info-display" class="file-info-display hidden">
-                        <div class="file-icon">📄</div>
-                        <p id="selected-filename" class="selected-filename"></p>
+                    <label for="file-input" class="btn btn-primary" id="browse-btn">Browse Files</label>
+                    <input type="file" id="file-input" multiple>
+                    <div id="file-list" class="selected-file-list hidden">
+                        <!-- Selected files will be listed here -->
                     </div>
                 </div>
 
@@ -98,7 +96,8 @@
                     <hr>
                     <h3>Save to Local Folder?</h3>
                     <div class="save-controls">
-                        <input type="text" id="save-path" placeholder="C:/Users/name/Documents/Output" class="input-field">
+                        <input type="text" id="save-path" placeholder="C:/Users/name/Documents/Output"
+                            class="input-field">
                         <button id="save-btn" class="btn btn-accent">Save Permanently</button>
                     </div>
                     <p id="save-status" class="save-status"></p>
@@ -118,7 +117,7 @@
         </main>
 
         <footer>
-            <p>&copy; 2026 Antigravity Document Tools. Powered by MarkItDown.</p>
+            <p>&copy; 2026 Kimura Mutahi. Powered by MarkItDown.</p>
         </footer>
     </div>
 
@@ -126,4 +125,5 @@
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
     <script src="/static/script.js"></script>
 </body>
+
 </html>

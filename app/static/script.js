@@ -2,8 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Core elements
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('file-input');
-    const filenameDisplay = document.getElementById('selected-filename');
-    const fileInfoDisplay = document.getElementById('file-info-display');
+    const fileList = document.getElementById('file-list');
     const formatOptions = document.querySelectorAll('.format-option');
     const convertBtn = document.getElementById('convert-btn');
     const statusCard = document.getElementById('status-card');
@@ -31,40 +30,64 @@ document.addEventListener('DOMContentLoaded', () => {
     // File Selection Logic
     const handleFiles = (files) => {
         if (files.length > 0) {
-            selectedFiles = Array.from(files);
-            if (selectedFiles.length === 1) {
-                filenameDisplay.textContent = selectedFiles[0].name;
-            } else {
-                filenameDisplay.textContent = `${selectedFiles.length} files selected`;
+            const newFiles = Array.from(files);
+            // Append unique files
+            newFiles.forEach(nf => {
+                if (!selectedFiles.find(sf => sf.name === nf.name && sf.size === nf.size)) {
+                    selectedFiles.push(nf);
+                }
+            });
+            renderFileList();
+            if (selectedFiles.length > 0) {
+                suggestFormat(selectedFiles[0].name);
             }
-            fileInfoDisplay.classList.remove('hidden');
-            
-            // Auto-suggestion based on first file extension
-            suggestFormat(selectedFiles[0].name);
             checkReady();
         }
+    };
+
+    const renderFileList = () => {
+        if (selectedFiles.length === 0) {
+            fileList.classList.add('hidden');
+            return;
+        }
+
+        fileList.classList.remove('hidden');
+        fileList.innerHTML = '';
+
+        selectedFiles.forEach((file, index) => {
+            const div = document.createElement('div');
+            div.className = 'file-item';
+            div.innerHTML = `
+                <span class="file-item-name">${file.name}</span>
+                <button class="file-item-remove" title="Remove">&times;</button>
+            `;
+            div.querySelector('.file-item-remove').onclick = (e) => {
+                e.stopPropagation();
+                selectedFiles.splice(index, 1);
+                renderFileList();
+                checkReady();
+            };
+            fileList.appendChild(div);
+        });
     };
 
     const suggestFormat = (filename) => {
         const ext = filename.split('.').pop().toLowerCase();
         formatOptions.forEach(opt => {
-            opt.classList.remove('active');
+            opt.classList.remove('suggested');
             const format = opt.dataset.format;
-            if (ext === 'pptx' && (format === 'pptx-to-md' || format === 'pptx-to-pdf')) {
-                opt.style.borderColor = 'var(--primary)';
-            } else if (ext === 'pdf' && (format === 'pdf-to-md' || format === 'pdf-to-pptx')) {
-                opt.style.borderColor = 'var(--primary)';
-            } else if (ext === 'docx' && format === 'docx-to-md') {
-                opt.style.borderColor = 'var(--primary)';
-            } else if (ext === 'md' && format === 'md-to-docx') {
-                opt.style.borderColor = 'var(--primary)';
-            } else {
-                opt.style.borderColor = '';
+            const matches = (
+                (ext === 'pptx' && (format === 'pptx-to-md' || format === 'pptx-to-pdf')) ||
+                (ext === 'pdf' && (format === 'pdf-to-md' || format === 'pdf-to-pptx')) ||
+                (ext === 'docx' && format === 'docx-to-md') ||
+                (ext === 'md' && format === 'md-to-docx')
+            );
+            if (matches) {
+                opt.classList.add('suggested');
             }
         });
     };
 
-    dropZone.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
 
     dropZone.addEventListener('dragover', (e) => {
@@ -204,7 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedFiles = [];
         selectedFormat = null;
         fileInput.value = '';
-        fileInfoDisplay.classList.add('hidden');
+        renderFileList();
         resultCard.classList.add('hidden');
         previewContainer.classList.add('hidden');
         formatOptions.forEach(opt => opt.classList.remove('active'));
