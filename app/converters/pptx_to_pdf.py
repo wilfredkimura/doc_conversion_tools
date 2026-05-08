@@ -3,20 +3,19 @@ from pathlib import Path
 from .base import BaseConverter
 
 try:
-    import comtypes.client
-    import win32com.client
-    HAS_COM = True
+    import aspose.slides as slides
+    HAS_ASPOSE = True
 except ImportError:
-    HAS_COM = False
+    HAS_ASPOSE = False
 
 class PptxToPdfConverter(BaseConverter):
     """
-    Converts PowerPoint (.pptx) files to PDF using Microsoft PowerPoint COM API.
+    Converts PowerPoint (.pptx) files to PDF using Aspose.Slides (Cross-Platform).
     """
 
     def convert(self, input_path: Path, output_dir: Path) -> Path:
-        if not HAS_COM:
-            raise RuntimeError("comtypes and pywin32 are required for PPTX to PDF conversion on Windows.")
+        if not HAS_ASPOSE:
+            raise RuntimeError("aspose-slides is required for PPTX to PDF conversion on Linux.")
             
         if not input_path.exists():
             raise FileNotFoundError(f"File not found: {input_path}")
@@ -24,33 +23,13 @@ class PptxToPdfConverter(BaseConverter):
         base_name = input_path.stem
         output_pdf = output_dir / f"{base_name}.pdf"
 
-        # Ensure absolute paths for COM
-        input_abs = str(input_path.absolute())
-        output_abs = str(output_pdf.absolute())
-
-        powerpoint = None
-        presentation = None
-        
         try:
-            # Initialize PowerPoint
-            # We use Dispatch to handle existing instances or create new one
-            powerpoint = win32com.client.Dispatch("Powerpoint.Application")
-            
-            # Open presentation without window
-            presentation = powerpoint.Presentations.Open(input_abs, WithWindow=False, ReadOnly=True)
-            
-            # Save as PDF (Type 32 = ppSaveAsPDF)
-            presentation.SaveAs(output_abs, 32)
+            # Load the presentation
+            with slides.Presentation(str(input_path)) as presentation:
+                # Save as PDF
+                presentation.save(str(output_pdf), slides.export.SaveFormat.PDF)
             
             return output_pdf
             
         except Exception as e:
             raise RuntimeError(f"Failed to convert PPTX to PDF {input_path.name}: {str(e)}")
-        finally:
-            if presentation:
-                presentation.Close()
-            if powerpoint:
-                # Only quit if we created it and there are no other presentations? 
-                # For safety in a server environment, we might want to be careful.
-                # But here we'll just quit.
-                powerpoint.Quit()

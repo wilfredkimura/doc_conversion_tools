@@ -177,8 +177,16 @@ async def open_folder(request: dict):
         raise HTTPException(status_code=404, detail="Path does not exist")
     
     try:
-        # Use os.startfile on Windows to open explorer
-        os.startfile(path)
+        import subprocess
+        import platform
+
+        if platform.system() == "Windows":
+            os.startfile(path)
+        elif platform.system() == "Darwin":  # macOS
+            subprocess.run(["open", path])
+        else:  # Linux and others
+            subprocess.run(["xdg-open", path])
+            
         return {"success": True}
     except Exception as e:
         return JSONResponse(
