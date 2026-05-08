@@ -8,10 +8,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const convertBtn = document.getElementById('convert-btn');
     const statusCard = document.getElementById('status-card');
     const resultCard = document.getElementById('result-card');
-    const downloadLink = document.getElementById('download-link');
-    const markdownPreview = document.getElementById('markdown-preview');
+    const batchResults = document.getElementById('batch-results');
     const previewContainer = document.getElementById('preview-container');
-    const copyBtn = document.getElementById('copy-btn');
+    const markdownPreview = document.getElementById('markdown-preview');
     const saveBtn = document.getElementById('save-btn');
     const savePath = document.getElementById('save-path');
     const saveStatus = document.getElementById('save-status');
@@ -22,11 +21,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const historyList = document.getElementById('history-list');
     const clearHistoryBtn = document.getElementById('clear-history-btn');
 
-    let selectedFile = null;
+    let selectedFiles = [];
     let selectedFormat = null;
-    let currentFileId = null;
-    let currentOutputFilename = null;
-    let rawMarkdown = "";
+    let currentResults = [];
 
     // Initialization
     loadHistory();
@@ -34,12 +31,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // File Selection Logic
     const handleFiles = (files) => {
         if (files.length > 0) {
-            selectedFile = files[0];
-            filenameDisplay.textContent = selectedFile.name;
+            selectedFiles = Array.from(files);
+            if (selectedFiles.length === 1) {
+                filenameDisplay.textContent = selectedFiles[0].name;
+            } else {
+                filenameDisplay.textContent = `${selectedFiles.length} files selected`;
+            }
             fileInfoDisplay.classList.remove('hidden');
             
-            // Auto-suggestion based on extension
-            suggestFormat(selectedFile.name);
+            // Auto-suggestion based on first file extension
+            suggestFormat(selectedFiles[0].name);
             checkReady();
         }
     };
@@ -52,6 +53,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (ext === 'pptx' && (format === 'pptx-to-md' || format === 'pptx-to-pdf')) {
                 opt.style.borderColor = 'var(--primary)';
             } else if (ext === 'pdf' && (format === 'pdf-to-md' || format === 'pdf-to-pptx')) {
+                opt.style.borderColor = 'var(--primary)';
+            } else if (ext === 'docx' && format === 'docx-to-md') {
+                opt.style.borderColor = 'var(--primary)';
+            } else if (ext === 'md' && format === 'md-to-docx') {
                 opt.style.borderColor = 'var(--primary)';
             } else {
                 opt.style.borderColor = '';
@@ -88,12 +93,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const checkReady = () => {
-        convertBtn.disabled = !(selectedFile && selectedFormat);
+        convertBtn.disabled = !(selectedFiles.length > 0 && selectedFormat);
     };
 
     // Conversion Process
     convertBtn.addEventListener('click', async () => {
-        if (!selectedFile || !selectedFormat) return;
+        if (selectedFiles.length === 0 || !selectedFormat) return;
 
         // UI Feedback
         statusCard.classList.remove('hidden');
@@ -101,7 +106,9 @@ document.addEventListener('DOMContentLoaded', () => {
         convertBtn.disabled = true;
 
         const formData = new FormData();
-        formData.append('file', selectedFile);
+        selectedFiles.forEach(file => {
+            formData.append('files', file);
+        });
         formData.append('format', selectedFormat);
 
         try {
@@ -112,37 +119,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
 
-            if (data.success) {
-                currentFileId = data.file_id;
-                currentOutputFilename = data.filename;
+            if (data.results) {
+                currentResults = data.results;
+                renderBatchResults(data.results);
                 
-                // Set Download
-                downloadLink.href = `/download/${data.file_id}/${data.filename}`;
-                
-                // Handle Preview
-                if (data.preview) {
-                    rawMarkdown = data.preview;
-                    renderMarkdown(data.preview);
-                    previewContainer.classList.remove('hidden');
-                    copyBtn.classList.remove('hidden');
-                } else {
-                    previewContainer.classList.add('hidden');
-                    copyBtn.classList.add('hidden');
-                }
-
                 // Show results
                 resultCard.classList.remove('hidden');
                 resultCard.scrollIntoView({ behavior: 'smooth' });
 
                 // Add to history
-                addToHistory({
-                    id: data.file_id,
-                    name: data.filename,
-                    format: selectedFormat,
-                    date: new Date().toLocaleString()
+                data.results.forEach(res => {
+                    if (res.success) {
+                        addToHistory({
+                            id: res.file_id,
+                            name: res.filename,
+                            format: selectedFormat,
+                            date: new Date().toLocaleString(),
+                            savePath: null // Not saved yet
+                        });
+                    }
                 });
             } else {
-                alert(`Error: ${data.detail}`);
+                alert(`Error: ${data.detail || 'Unknown error'}`);
             }
         } catch (err) {
             alert(`An error occurred: ${err.message}`);
@@ -152,43 +150,67 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    const renderMarkdown = (text) => {
+    const renderBatchResults = (results) => {
+        batchResults.innerHTML = '';
+        previewContainer.classList.add('hidden');
+
+        results.forEach(res => {
+            const div = document.createElement('div');
+            div.className = 'batch-item';
+            
+            if (res.success) {
+                div.innerHTML = `
+                    <div class="batch-item-info">
+                        <span class="batch-item-name">${res.filename}</span>
+                        <span class="batch-item-meta" style="color: var(--accent); font-size: 0.8rem;">Ready</span>
+                    </div>
+                    <div class="batch-item-actions">
+                        ${res.preview ? `<button class="btn btn-secondary btn-small view-btn" data-id="${res.file_id}">Preview</button>` : ''}
+                        <a href="/download/${res.file_id}/${res.filename}" class="btn btn-primary btn-small" download>Download</a>
+                    </div>
+                `;
+
+                if (res.preview) {
+                    div.querySelector('.view-btn').onclick = () => showPreview(res.preview);
+                }
+            } else {
+                div.innerHTML = `
+                    <div class="batch-item-info">
+                        <span class="batch-item-name">${res.filename}</span>
+                        <span class="batch-item-meta" style="color: var(--error); font-size: 0.8rem;">Failed: ${res.detail}</span>
+                    </div>
+                `;
+            }
+            batchResults.appendChild(div);
+        });
+    };
+
+    const showPreview = (text) => {
         if (typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
             const html = marked.parse(text);
             markdownPreview.innerHTML = DOMPurify.sanitize(html);
-            markdownPreview.className = "markdown-body"; // Ensure class for styling
+            markdownPreview.className = "markdown-body";
         } else {
             markdownPreview.textContent = text;
         }
+        previewContainer.classList.remove('hidden');
+        previewContainer.scrollIntoView({ behavior: 'smooth' });
     };
 
     // UI Actions
-    newConvBtn.addEventListener('click', () => {
-        resetApp();
-    });
+    newConvBtn.addEventListener('click', () => resetApp());
 
     const resetApp = () => {
-        selectedFile = null;
+        selectedFiles = [];
         selectedFormat = null;
         fileInput.value = '';
         fileInfoDisplay.classList.add('hidden');
         resultCard.classList.add('hidden');
+        previewContainer.classList.add('hidden');
         formatOptions.forEach(opt => opt.classList.remove('active'));
         checkReady();
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
-
-    copyBtn.addEventListener('click', () => {
-        navigator.clipboard.writeText(rawMarkdown).then(() => {
-            const originalText = copyBtn.textContent;
-            copyBtn.textContent = 'Copied!';
-            copyBtn.classList.add('btn-accent');
-            setTimeout(() => {
-                copyBtn.textContent = originalText;
-                copyBtn.classList.remove('btn-accent');
-            }, 2000);
-        });
-    });
 
     // Local Storage History
     function loadHistory() {
@@ -198,11 +220,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function addToHistory(item) {
         let history = JSON.parse(localStorage.getItem('conv_history') || '[]');
-        // Keep only last 10
-        history.unshift(item);
-        history = history.slice(0, 10);
-        localStorage.setItem('conv_history', JSON.stringify(history));
-        renderHistoryList(history);
+        // Avoid duplicates by ID
+        if (!history.find(h => h.id === item.id)) {
+            history.unshift(item);
+            history = history.slice(0, 20); // Keep last 20
+            localStorage.setItem('conv_history', JSON.stringify(history));
+            renderHistoryList(history);
+        }
+    }
+
+    function updateHistoryItem(id, savePath) {
+        let history = JSON.parse(localStorage.getItem('conv_history') || '[]');
+        const item = history.find(h => h.id === id);
+        if (item) {
+            item.savePath = savePath;
+            localStorage.setItem('conv_history', JSON.stringify(history));
+            renderHistoryList(history);
+        }
     }
 
     function renderHistoryList(history) {
@@ -223,11 +257,31 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="history-item-meta">${item.format} • ${item.date}</span>
                 </div>
                 <div class="history-item-actions">
+                    ${item.savePath ? `<button class="btn btn-secondary btn-small btn-open" data-path="${item.savePath}">Open Folder</button>` : ''}
                     <a href="/download/${item.id}/${item.name}" class="btn btn-secondary btn-small" download>Download</a>
                 </div>
             `;
+
+            if (item.savePath) {
+                div.querySelector('.btn-open').onclick = () => openFolder(item.savePath);
+            }
+
             historyList.appendChild(div);
         });
+    }
+
+    async function openFolder(path) {
+        try {
+            const response = await fetch('/open-folder', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path })
+            });
+            const data = await response.json();
+            if (!data.success) alert(`Error opening folder: ${data.detail}`);
+        } catch (err) {
+            alert(`Error: ${err.message}`);
+        }
     }
 
     clearHistoryBtn.addEventListener('click', () => {
@@ -245,32 +299,46 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         saveBtn.disabled = true;
-        saveStatus.textContent = 'Saving...';
+        saveStatus.textContent = 'Saving batch...';
         
-        try {
-            const response = await fetch('/save-local', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    file_id: currentFileId,
-                    target_path: path,
-                    original_name: selectedFile ? selectedFile.name : currentOutputFilename
-                })
-            });
+        let successCount = 0;
+        let lastError = null;
 
-            const data = await response.json();
-            if (data.success) {
-                saveStatus.textContent = 'Saved successfully!';
-                saveStatus.style.color = 'var(--accent)';
-            } else {
-                saveStatus.textContent = `Error: ${data.detail}`;
-                saveStatus.style.color = 'var(--error)';
+        // Save each successful conversion in the current batch
+        for (const res of currentResults) {
+            if (!res.success) continue;
+
+            try {
+                const response = await fetch('/save-local', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        file_id: res.file_id,
+                        target_path: path,
+                        original_name: res.filename
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    successCount++;
+                    updateHistoryItem(res.file_id, path);
+                } else {
+                    lastError = data.detail;
+                }
+            } catch (err) {
+                lastError = err.message;
             }
-        } catch (err) {
-            saveStatus.textContent = `Error: ${err.message}`;
-            saveStatus.style.color = 'var(--error)';
-        } finally {
-            saveBtn.disabled = false;
         }
+
+        if (successCount > 0) {
+            saveStatus.textContent = `Successfully saved ${successCount} files!`;
+            saveStatus.style.color = 'var(--accent)';
+        } else if (lastError) {
+            saveStatus.textContent = `Error: ${lastError}`;
+            saveStatus.style.color = 'var(--error)';
+        }
+        
+        saveBtn.disabled = false;
     });
 });

@@ -31,10 +31,10 @@
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
                         </svg>
                     </div>
-                    <p>Drag & Drop your file here</p>
+                    <p>Drag & Drop your files here</p>
                     <span class="or">or</span>
                     <label for="file-input" class="btn btn-primary">Browse Files</label>
-                    <input type="file" id="file-input" hidden>
+                    <input type="file" id="file-input" multiple hidden>
                     <div id="file-info-display" class="file-info-display hidden">
                         <div class="file-icon">📄</div>
                         <p id="selected-filename" class="selected-filename"></p>
@@ -56,6 +56,12 @@
                         <div class="format-option" data-format="pptx-to-pdf">
                             <span class="label">PPTX to PDF</span>
                         </div>
+                        <div class="format-option" data-format="docx-to-md">
+                            <span class="label">DOCX to MD</span>
+                        </div>
+                        <div class="format-option" data-format="md-to-docx">
+                            <span class="label">MD to DOCX</span>
+                        </div>
                     </div>
                 </div>
 
@@ -76,9 +82,11 @@
                     <h2>Conversion Complete!</h2>
                     <div class="result-actions">
                         <button id="new-conv-btn" class="btn btn-secondary">Start New</button>
-                        <button id="copy-btn" class="btn btn-secondary hidden">Copy Markdown</button>
-                        <a id="download-link" class="btn btn-primary" download>Download File</a>
                     </div>
+                </div>
+
+                <div id="batch-results" class="batch-results">
+                    <!-- Batch items will be injected here -->
                 </div>
 
                 <div id="preview-container" class="preview-container hidden">

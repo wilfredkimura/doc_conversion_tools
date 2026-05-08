@@ -12,7 +12,9 @@ from converters import (
     PptxToMarkdownConverter,
     PdfToMarkdownConverter,
     PdfToPptxConverter,
-    PptxToPdfConverter
+    PptxToPdfConverter,
+    DocxToMarkdownConverter,
+    MarkdownToDocxConverter
 )
 
 app = FastAPI(title="Multi-Format Converter API")
@@ -32,7 +34,9 @@ converters = {
     "pptx-to-md": PptxToMarkdownConverter(),
     "pdf-to-md": PdfToMarkdownConverter(),
     "pdf-to-pptx": PdfToPptxConverter(),
-    "pptx-to-pdf": PptxToPdfConverter()
+    "pptx-to-pdf": PptxToPdfConverter(),
+    "docx-to-md": DocxToMarkdownConverter(),
+    "md-to-docx": MarkdownToDocxConverter()
 }
 
 class SaveRequest(BaseModel):
@@ -45,44 +49,50 @@ async def read_index():
     return FileResponse(STATIC_DIR / "index.html")
 
 @app.post("/convert")
-async def convert_file(
-    file: UploadFile = File(...),
+async def convert_files(
+    files: list[UploadFile] = File(...),
     format: str = Form(...)
 ):
     if format not in converters:
         raise HTTPException(status_code=400, detail="Invalid format selected.")
 
-    # Save uploaded file temporarily
-    file_id = str(uuid.uuid4())
-    temp_dir = UPLOAD_DIR / file_id
-    temp_dir.mkdir()
+    results = []
     
-    input_path = temp_dir / file.filename
-    with open(input_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    try:
-        converter = converters[format]
-        output_path = converter.convert(input_path, temp_dir)
+    for file in files:
+        file_id = str(uuid.uuid4())
+        temp_dir = UPLOAD_DIR / file_id
+        temp_dir.mkdir()
         
-        # Check if it's a markdown file for preview
-        preview_content = None
-        if output_path.suffix == ".md":
-            with open(output_path, "r", encoding="utf-8") as f:
-                preview_content = f.read()
+        input_path = temp_dir / file.filename
+        with open(input_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
 
-        return {
-            "file_id": file_id,
-            "filename": output_path.name,
-            "preview": preview_content,
-            "success": True
-        }
-    except Exception as e:
-        shutil.rmtree(temp_dir)
-        return JSONResponse(
-            status_code=500,
-            content={"success": False, "detail": str(e)}
-        )
+        try:
+            converter = converters[format]
+            output_path = converter.convert(input_path, temp_dir)
+            
+            # Check if it's a markdown file for preview
+            preview_content = None
+            if output_path.suffix == ".md":
+                with open(output_path, "r", encoding="utf-8") as f:
+                    preview_content = f.read()
+
+            results.append({
+                "file_id": file_id,
+                "filename": output_path.name,
+                "preview": preview_content,
+                "success": True
+            })
+        except Exception as e:
+            if temp_dir.exists():
+                shutil.rmtree(temp_dir)
+            results.append({
+                "filename": file.filename,
+                "success": False,
+                "detail": str(e)
+            })
+            
+    return {"results": results}
 
 @app.get("/download/{file_id}/{filename}")
 async def download_file(file_id: str, filename: str):
@@ -112,9 +122,6 @@ async def save_local(request: SaveRequest):
             raise HTTPException(status_code=400, detail=f"Invalid target path: {str(e)}")
 
     try:
-        # Move all files (including images if any) to the target path
-        # But specifically the main file should keep its original name or similar
-        # If it's a directory (images), we move that too
         for item in source_dir.iterdir():
             dest = target_dir / item.name
             if item.is_dir():
@@ -124,7 +131,27 @@ async def save_local(request: SaveRequest):
             else:
                 shutil.copy2(item, dest)
         
-        return {"success": True, "message": f"Files saved to {request.target_path}"}
+        return {"success": True, "message": f"Files saved to {request.target_path}", "path": request.target_path}
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "detail": str(e)}
+        )
+
+@app.post("/open-folder")
+async def open_folder(request: dict):
+    path = request.get("path")
+    if not path:
+        raise HTTPException(status_code=400, detail="Path is required")
+    
+    path_obj = Path(path)
+    if not path_obj.exists():
+        raise HTTPException(status_code=404, detail="Path does not exist")
+    
+    try:
+        # Use os.startfile on Windows to open explorer
+        os.startfile(path)
+        return {"success": True}
     except Exception as e:
         return JSONResponse(
             status_code=500,
