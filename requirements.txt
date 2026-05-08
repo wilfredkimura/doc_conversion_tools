@@ -7,5 +7,3 @@ python-docx
 markdown
 beautifulsoup4
 aspose-slides
-pdf2pptx
-pymupdf

@@ -1,33 +1,40 @@
-import subprocess
-import sys
+import os
 from pathlib import Path
 from .base import BaseConverter
 
+try:
+    import aspose.slides as slides
+    HAS_ASPOSE = True
+except ImportError:
+    HAS_ASPOSE = False
+
 class PdfToPptxConverter(BaseConverter):
     """
-    Converts PDF files to PowerPoint (.pptx) by rendering pages as images.
+    Converts PDF files to PowerPoint (.pptx) using Aspose.Slides (Cross-Platform).
     """
 
     def convert(self, input_path: Path, output_dir: Path) -> Path:
+        if not HAS_ASPOSE:
+            raise RuntimeError("aspose-slides is required for PDF to PPTX conversion.")
+            
         if not input_path.exists():
             raise FileNotFoundError(f"File not found: {input_path}")
 
         base_name = input_path.stem
-        # pdf2pptx usually creates a file with the same name in the current directory or specified one
         output_pptx = output_dir / f"{base_name}.pptx"
 
         try:
-            # We call the CLI tool directly for simplicity and reliability
-            # Command: pdf2pptx -o output.pptx input.pdf
-            # Note: Checking the exact CLI arguments for pdf2pptx
-            result = subprocess.run(
-                [sys.executable, "-m", "pdf2pptx", "-o", str(output_pptx), str(input_path)],
-                capture_output=True,
-                text=True
-            )
-            
-            if result.returncode != 0:
-                raise RuntimeError(f"pdf2pptx failed: {result.stderr}")
+            # Create a new presentation
+            with slides.Presentation() as pres:
+                # Remove the first default slide
+                pres.slides.remove_at(0)
+                
+                # Import the PDF as slides
+                # Note: aspose-slides handles PDF import directly
+                pres.slides.add_from_pdf(str(input_path))
+                
+                # Save the presentation
+                pres.save(str(output_pptx), slides.export.SaveFormat.PPTX)
             
             return output_pptx
             
