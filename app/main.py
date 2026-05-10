@@ -16,7 +16,7 @@ from .converters import (
     PptxToMarkdownConverter,
     PdfToMarkdownConverter,
     PdfToPptxConverter,
-    PptxToPdfConverter,
+    PdfToPptxConverter,
     DocxToMarkdownConverter,
     MarkdownToDocxConverter
 )
@@ -46,7 +46,6 @@ converters = {
     "pptx-to-md": PptxToMarkdownConverter(),
     "pdf-to-md": PdfToMarkdownConverter(),
     "pdf-to-pptx": PdfToPptxConverter(),
-    "pptx-to-pdf": PptxToPdfConverter(),
     "docx-to-md": DocxToMarkdownConverter(),
     "md-to-docx": MarkdownToDocxConverter()
 }
